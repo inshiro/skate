@@ -3,7 +3,6 @@ package na.komi.skate.core.log
 import android.util.Log
 import na.komi.skate.core.Skate
 
-
 /**
  * implementation. for outside use.
  */

@@ -14,7 +14,7 @@ interface Navigator {
     /**
      * Get the current list of fragments added.
      */
-    val stack: Stack<Skate.KnavigatorFragment>
+    val stack: Stack<Skate.SkateFragment>
 
     /**
      * Specify the container to house the [Fragment]
@@ -30,7 +30,7 @@ interface Navigator {
      * Set the [FragmentManager] scoped to the [Activity]. This changes every on configuration change.
      * Be sure to re-set it when that occurs.
      */
-    infix fun setFragmentManager(fm: FragmentManager)
+    val fragmentManager: FragmentManager?
 
     /**
      * Add a [Fragment] to the stack.

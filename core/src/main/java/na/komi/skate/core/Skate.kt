@@ -1,128 +1,51 @@
 package na.komi.skate.core
 
-
 import android.app.Activity
-import android.app.Application
 import android.os.Bundle
 import android.os.Handler
+import android.os.Parcelable
 import androidx.annotation.IdRes
-import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
+import kotlinx.android.parcel.Parcelize
 import na.komi.skate.core.log.Logger
-import java.util.*
+import java.util.Stack
 
-//fun ComponentCallbacks.startSkating() = lazy { Skate() }
-fun Activity.startSkating() = lazy {
-    val skate = Skate()
-    if (!SkateInit)
-        application.registerActivityLifecycleCallbacks(SkateLifecycleCallbacks(object : Skate.ActivityLifecycleCallbacks {
-            override fun onActivityDestroyed(activity: Activity?) {
-                if (activity != null && activity.isFinishing) {
-                    Logger debug "OnDestroy"
-                    skate.clear()
-                    SkateInit = false
-                }
-                super.onActivityDestroyed(activity)
-            }
-        })).also { SkateInit = true }
-    skate
-}
+class Skate : Navigator {
 
-internal var SkateInit = false
-fun AppCompatActivity.startSkating() = lazy {
-    val skate = Skate()
-    if (!SkateInit)
-        application.registerActivityLifecycleCallbacks(SkateLifecycleCallbacks(object : Skate.ActivityLifecycleCallbacks {
-            override fun onActivityDestroyed(activity: Activity?) {
-                if (activity != null && activity.isFinishing) {
-                    Logger debug "OnDestroy"
-                    skate.clear()
-                    SkateInit = false
-                }
-                super.onActivityDestroyed(activity)
-            }
-        })).also { SkateInit = true }
-    skate
-}
-
-fun Fragment.startSkating() = lazy {
-    val skate = Skate()
-    if (!SkateInit)
-        activity?.application?.registerActivityLifecycleCallbacks(SkateLifecycleCallbacks(object : Skate.ActivityLifecycleCallbacks {
-            override fun onActivityDestroyed(activity: Activity?) {
-                if (activity != null && activity.isFinishing) {
-                    Logger debug "OnDestroy"
-                    skate.clear()
-                    SkateInit = false
-                }
-                super.onActivityDestroyed(activity)
-            }
-        }))?.also { SkateInit = true }
-    skate
-}
-
-class SkateLifecycleCallbacks(val callback: Skate.ActivityLifecycleCallbacks) : Application.ActivityLifecycleCallbacks {
-    override fun onActivityPaused(activity: Activity?) {
-        callback.onActivityPaused(activity)
+    internal fun serializeList(list: ArrayList<SkateFragment>) {
+        stack.clear()
+        stack.addAll(list)
     }
 
-    override fun onActivityResumed(activity: Activity?) {
-        callback.onActivityResumed(activity)
-    }
+    private var _stack: Stack<SkateFragment>? = Stack()
 
-    override fun onActivityStarted(activity: Activity?) {
-        callback.onActivityStarted(activity)
-    }
-
-    override fun onActivityDestroyed(activity: Activity?) {
-        callback.onActivityDestroyed(activity)
-        if (activity != null && activity.isFinishing)
-            activity.application?.unregisterActivityLifecycleCallbacks(this)
-    }
-
-    override fun onActivitySaveInstanceState(activity: Activity?, outState: Bundle?) {
-        callback.onActivitySaveInstanceState(activity, outState)
-    }
-
-    override fun onActivityStopped(activity: Activity?) {
-        callback.onActivityStopped(activity)
-    }
-
-    override fun onActivityCreated(activity: Activity?, savedInstanceState: Bundle?) {
-        callback.onActivityCreated(activity, savedInstanceState)
-    }
-
-}
-
-/**
- * An easy to use, simple yet powerful Fragment Navigator.
- */
-class Skate private constructor() : Navigator {
-
+    override val stack
+        get() = _stack!!
 
     companion object {
+
         @Volatile
         private var _instance: Skate? = null
 
         @Synchronized
-        private fun getInstance() = _instance ?: synchronized(Skate::class.java) {
-            _instance ?: Skate().also { _instance = it }
-        }
+        private fun getInstance() =
+                _instance ?: synchronized(Skate::class.java) {
+                    _instance ?: Skate().also { _instance = it }
+                }
 
-        //Make singleton from serialize and deserialize operation.
         @Suppress("unused")
         private fun readResolve() = getInstance()
 
-
         operator fun invoke(): Skate {
-            // If we call this constructor and the instance is available, throw.
-            Logger assert "Skate instance null?: $${_instance == null}"
-            //if (_instance != null)
-            //    throw RuntimeException("Use startSkating() method to get the single instance of this class.")
+
+            if (_instance != null)
+                throw RuntimeException("Use startSkating() method to get the single instance of this class.")
+
             return getInstance()
         }
+
 
         /**
          * Pass an implementation of [Logger] here to enable Katana's logging functionality
@@ -142,7 +65,7 @@ class Skate private constructor() : Navigator {
          *
          * A balance between saving memory and speed.
          */
-        val SPARING_SINGLETON: Int = 1
+        val SPARING: Int = 1
 
 
         /**
@@ -163,7 +86,6 @@ class Skate private constructor() : Navigator {
         fun onActivityDestroyed(activity: Activity?) {}
     }
 
-
     @IdRes
     override var container: Int = -1
     override var defaultMode = FACTORY
@@ -171,21 +93,17 @@ class Skate private constructor() : Navigator {
     private val animationEnd = android.R.animator.fade_out
     private val handler by lazy { Handler() }
 
-    private var SYNCHRONOUS = false
+    override val current: Fragment?
+        get() = currentlyVisibleFragment()
 
+    override var fragmentManager: FragmentManager? = null
 
-    private val fragmentManager: FragmentManager
-        get() = _fragmentManager!!
+    private val internalFragmentManager: FragmentManager
+        get() = fragmentManager ?: throw NullPointerException("Please set the fragment manager")
 
     private val Fragment.name
         get() = this::class.java.simpleName
 
-    override val current: Fragment?
-        get() = currentlyVisibleFragment()
-
-    override val stack by lazy {
-        Stack<KnavigatorFragment>()
-    }
 
     val back: Boolean
         get() = goBack()
@@ -196,21 +114,18 @@ class Skate private constructor() : Navigator {
      * @param inBackStack Whether this fragment added to back stack or not.
      * @param modular Hide this fragment as well on [navigate]
      */
-    data class KnavigatorFragment(
+    @Parcelize
+    data class SkateFragment(
             var tag: String,
             var state: State,
             var inBackStack: Boolean = true,
             var modular: Boolean = false
-    )
-
-    override infix fun setFragmentManager(fm: FragmentManager) {
-        _fragmentManager = null
-        _fragmentManager = fm
-    }
+    ) : Parcelable
 
     private fun State.isVisible() = this == State.ADDED || this == State.ATTACHED || this == State.SHOWING
 
     private var currentTransaction: FragmentTransaction? = null
+
     private var ALLOW_COMMIT = true
 
     private fun commit() {
@@ -225,13 +140,13 @@ class Skate private constructor() : Navigator {
 
     private fun checkAndCreateTransaction() {
         if (currentTransaction == null)
-            currentTransaction = fragmentManager.beginTransaction()
+            currentTransaction = internalFragmentManager.beginTransaction()
     }
 
     infix fun to(fragment: Fragment) = navigate(fragment)
 
     override fun navigate(fragment: Fragment) {
-        val list = fragmentManager.fragments
+        val list = internalFragmentManager.fragments
         list.reverse()
 
         //SYNCHRONOUS = true
@@ -268,7 +183,7 @@ class Skate private constructor() : Navigator {
             it.state =
                     when (mode) {
                         FACTORY -> State.ADDED
-                        SPARING_SINGLETON -> State.ATTACHED
+                        SPARING -> State.ATTACHED
                         else -> State.SHOWING
                     }
             it.modular = modular
@@ -277,15 +192,15 @@ class Skate private constructor() : Navigator {
         }
 
         if (index != -1) {
-            stack.add(index, KnavigatorFragment(name, State.ADDED, addToBackStack, modular))
+            stack.add(index, SkateFragment(name, State.ADDED, addToBackStack, modular))
             return
         }
         stack.push(
-                KnavigatorFragment(
+                SkateFragment(
                         name,
                         when (mode) {
                             FACTORY -> State.ADDED
-                            SPARING_SINGLETON -> State.ATTACHED
+                            SPARING -> State.ATTACHED
                             else -> State.SHOWING
                         },
                         addToBackStack,
@@ -305,7 +220,7 @@ class Skate private constructor() : Navigator {
         stack.lastOrNull { it.tag == name }?.also {
             it.state =
                     when (mode) {
-                        SPARING_SINGLETON -> State.DETACHED
+                        SPARING -> State.DETACHED
                         else -> State.HIDDEN
                     }
             it.modular = modular
@@ -348,7 +263,7 @@ class Skate private constructor() : Navigator {
                         Logger assert "$prefix detached"
                         when (mode) {
                             FACTORY -> state = State.ADDED.also { Logger debug "Add $tag" }
-                            SPARING_SINGLETON -> state = State.ATTACHED.also { Logger debug "Attach $tag" }
+                            SPARING -> state = State.ATTACHED.also { Logger debug "Attach $tag" }
                             SINGLETON -> state = State.SHOWING.also { Logger debug "Show $tag" }
                         }
                     }
@@ -356,7 +271,7 @@ class Skate private constructor() : Navigator {
                         Logger assert "$prefix hiding"
                         when (mode) {
                             FACTORY -> state = State.ADDED.also { Logger debug "Add $tag" }
-                            SPARING_SINGLETON -> state = State.ATTACHED.also { Logger debug "Attach $tag" }
+                            SPARING -> state = State.ATTACHED.also { Logger debug "Attach $tag" }
                             SINGLETON -> state = State.SHOWING.also { Logger debug "Show $tag" }
                         }
                     }
@@ -382,7 +297,7 @@ class Skate private constructor() : Navigator {
                         Logger assert "$prefix attached"
                         when (mode) {
                             FACTORY -> state = State.REMOVED.also { Logger debug "Remove $tag" }
-                            SPARING_SINGLETON -> state = State.DETACHED.also { Logger debug "Detach $tag" }
+                            SPARING -> state = State.DETACHED.also { Logger debug "Detach $tag" }
                             SINGLETON -> state = State.HIDDEN.also { Logger debug "Hide $tag" }
                         }
 
@@ -391,7 +306,7 @@ class Skate private constructor() : Navigator {
                         Logger assert "$prefix showing"
                         when (mode) {
                             FACTORY -> state = State.REMOVED.also { Logger debug "Remove $tag" }
-                            SPARING_SINGLETON -> state = State.DETACHED.also { Logger debug "Detach $tag" }
+                            SPARING -> state = State.DETACHED.also { Logger debug "Detach $tag" }
                             SINGLETON -> state = State.HIDDEN.also { Logger debug "Hide $tag" }
                         }
                     }
@@ -417,13 +332,13 @@ class Skate private constructor() : Navigator {
     override fun show(fragment: Fragment, mode: Int, addToBackStack: Boolean, modular: Boolean) {
         Logger verbose "== COMMENCE SHOW == "
 
-        val frag = fragmentManager.findFragmentByTag(fragment.name) ?: fragment
+        val frag = internalFragmentManager.findFragmentByTag(fragment.name) ?: fragment
 
         val state = parseState(frag, mode)
 
         if (state == State.ERROR) return
 
-        //val transaction = fragmentManager.beginTransaction().setCustomAnimations(animationStart, animationEnd)
+        //val transaction = internalFragmentManager.beginTransaction().setCustomAnimations(animationStart, animationEnd)
         checkAndCreateTransaction()
 
         frag.push(mode, addToBackStack, modular)
@@ -448,7 +363,7 @@ class Skate private constructor() : Navigator {
     override fun hide(fragment: Fragment, mode: Int, addToBackStack: Boolean, modular: Boolean) {
         Logger verbose "== COMMENCE HIDE == "
 
-        val frag = fragmentManager.findFragmentByTag(fragment.name) ?: fragment
+        val frag = internalFragmentManager.findFragmentByTag(fragment.name) ?: fragment
 
         val state = parseState(frag, mode, false)
 
@@ -457,7 +372,7 @@ class Skate private constructor() : Navigator {
         if (!modular)
             ALLOW_COMMIT = true
 
-        //val transaction = fragmentManager.beginTransaction().setCustomAnimations(animationStart, animationEnd)
+        //val transaction = internalFragmentManager.beginTransaction().setCustomAnimations(animationStart, animationEnd)
 
         checkAndCreateTransaction()
 
@@ -479,12 +394,12 @@ class Skate private constructor() : Navigator {
 
     private inline fun currentlyVisibleFragment(
             goingBack: Boolean = false,
-            action: (fragment: Fragment, kfragment: KnavigatorFragment) -> Unit = { _, _ -> }
+            action: (fragment: Fragment, kfragment: SkateFragment) -> Unit = { _, _ -> }
     ): Fragment? {
         stack.lastOrNull { it.state.isVisible() && if (goingBack) it.inBackStack else true }?.also { KFragment ->
 
             // If it's in this list, it means it's visible.. cause ¯\_(?)_/¯
-            fragmentManager.fragments.lastOrNull { it.name == KFragment.tag }?.also { fragment ->
+            internalFragmentManager.fragments.lastOrNull { it.name == KFragment.tag }?.also { fragment ->
                 action(fragment, KFragment)
                 return fragment
             }
@@ -509,7 +424,7 @@ class Skate private constructor() : Navigator {
     @Suppress("unused")
     private fun displayFragments() {
         handler.postDelayed({
-            fragmentManager.fragments.joinToString(", ") { it::class.java.simpleName }
+            internalFragmentManager.fragments.joinToString(", ") { it::class.java.simpleName }
                     .also { Logger verbose "Currently have: [$it]" }
         }, 100)
     }
@@ -517,17 +432,16 @@ class Skate private constructor() : Navigator {
 
     private var listener: OnNavigateListener? = null
 
-    private var _fragmentManager: FragmentManager? = null
-
     fun setOnNavigateListener(listener: OnNavigateListener) {
         this.listener = null
         this.listener = listener
     }
 
-    fun clear() {
+    internal fun clear() {
         _instance = null
-        _fragmentManager = null
+        fragmentManager = null
         listener = null
+        _stack = null
     }
 
     interface OnNavigateListener {

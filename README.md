@@ -1,6 +1,6 @@
 # Skate
-Seamless fragment navigation made easy.
-Skate is a fragment manager controller that allows you to easily navigate from one fragment to another, show, and hide fragments with all the already available methods in FragmentManager.
+
+Skate is a fragment manager controller that allows you to easily navigate from one fragment to another, show, hide, attach, and detach fragments. Seamless and simple. Just like it should be.
 Currently Skate only has support for Kotlin and AndroidX.
 - State retention
 - Doesn't use reflection.
@@ -8,10 +8,11 @@ Currently Skate only has support for Kotlin and AndroidX.
 - Ability to add/attach/show fragments and their respective counterparts.
 - Allows commit with state save.
 - Lightweight and fast
-- Rotation support
 - Lifecycle aware
+- Support for configuration change
+- Support to Save and Restore Flow
 
-Skate uses its own internal stack that manages fragments with clarity. The stack is pushed or popped only when a fragment is *added* or *removed*. Otherwise, any modification is applied accordingly in the stack. This prevents having to create new objects just to record the state of a fragment. 
+Skate uses its own internal stack to manage fragments with clarity. The stack is pushed or popped only when a fragment is *added* or *removed*. Otherwise, any modification is applied accordingly in the stack. This prevents having to create new objects just to record the state of a fragment. 
 
 ## Setup
 ```gradle
@@ -31,10 +32,11 @@ dependencies {
 ```kotlin
 class MainActivity : AppCompatActivity() {
 
-	val skate by startSkating()
+	private lateinit var skate: Skate
 	
 	override fun onCreate(savedInstanceState: Bundle?) {
-		super.onCreate(savedInstanceState)  
+		super.onCreate(savedInstanceState)
+		skate = startSkating(savedInstanceState)
 		skate.fragmentManager = supportFragmentManager
 		skate.container = R.id.main_container
 		skate.mode = Skate.FACTORY // optional
@@ -47,29 +49,20 @@ class MainActivity : AppCompatActivity() {
 }
 ```
 
-
-## Showing a fragment
+## Main Usage
+Skate has 3 main functions.
 ```kotlin
+// Showing
 skate show fragment
-```
 
+// Hiding
+skate back fragment // OR skate hide fragment
 
-
-## Hiding a fragment
-```kotlin
-skate back fragment
-// OR
-skate hide fragment
-```
-
-## Navigating to another fragment
-
-To hide the current visible fragment and then show the destination
-```kotlin
+// Navigating to another fragment
 skate to fragment
 ```
-#
-Yes it's that simple!
+Yup. It's that simple!
+
 #
 ## Modular fragments
 With Skate, you can define `modular` fragments which will hide alongside the currently visible fragment on navigation.
@@ -137,12 +130,6 @@ skate.operate {
    show(MainFragment)
 }
 ```
-## Handling configuration changes
-Fragments should not be declared as singletons and important data should not be stored in them, the same goes for Activities. Setup your fragments in the `onCreate()` method like so
-```kotlin
-val mainFragment by lazy { MainFragment() }
-```
-
 
 ## Fragment Lifecycle
 If your application requires a call to any of Skate's methods in an Activity lifecycle method other than `onCreate()`, do it in either `FragmentActivity#onResumeFragments()` or `Activity#onPostResume()`. These two methods are guaranteed to be called after the Activity has been restored to its original state, and therefore avoid the possibility of state loss all together.

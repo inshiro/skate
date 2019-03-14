@@ -1,7 +1,9 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-android-extensions'
 apply plugin: 'com.github.dcendents.android-maven'
 group='na.komi.skate.core'
+
 android {
     compileSdkVersion 28
 
@@ -24,6 +26,11 @@ android {
         }
     }
 
+}
+
+androidExtensions {
+    /** For Parcelable **/
+    experimental = true
 }
 
 dependencies {
