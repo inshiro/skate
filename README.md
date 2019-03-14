@@ -9,8 +9,8 @@ Currently Skate only has support for Kotlin and AndroidX.
 - Allows commit with state save.
 - Lightweight and fast
 - Lifecycle aware
-- Support for configuration change
-- Support to Save and Restore Flow
+- Configuration change support
+- Save and Restore Flow support
 
 Skate uses its own internal stack to manage fragments with clarity. The stack is pushed or popped only when a fragment is *added* or *removed*. Otherwise, any modification is applied accordingly in the stack. This prevents having to create new objects just to record the state of a fragment. 
 
@@ -36,6 +36,7 @@ class MainActivity : AppCompatActivity() {
 	
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
+		
 		skate = startSkating(savedInstanceState)
 		skate.fragmentManager = supportFragmentManager
 		skate.container = R.id.main_container
