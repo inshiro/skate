@@ -24,7 +24,7 @@ allprojects {
 ```
 ```gradle
 dependencies {
-    implementation 'na.komi.inshiro:skate:0.1.0'
+    implementation 'com.github.inshiro:skate:0.1.0'
 }
 ```
 
