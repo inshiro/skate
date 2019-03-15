@@ -52,7 +52,7 @@ class Skate : Navigator {
          *
          * A balance between saving memory and speed.
          */
-        val SPARING_SINGLETON: Int = 1
+        val SPARING: Int = 1
 
 
         /**
@@ -174,7 +174,7 @@ class Skate : Navigator {
             it.state =
                     when (mode) {
                         FACTORY -> State.ADDED
-                        SPARING_SINGLETON -> State.ATTACHED
+                        SPARING -> State.ATTACHED
                         else -> State.SHOWING
                     }
             it.modular = modular
@@ -191,7 +191,7 @@ class Skate : Navigator {
                         name,
                         when (mode) {
                             FACTORY -> State.ADDED
-                            SPARING_SINGLETON -> State.ATTACHED
+                            SPARING -> State.ATTACHED
                             else -> State.SHOWING
                         },
                         addToBackStack,
@@ -211,7 +211,7 @@ class Skate : Navigator {
         stack.lastOrNull { it.tag == name }?.also {
             it.state =
                     when (mode) {
-                        SPARING_SINGLETON -> State.DETACHED
+                        SPARING -> State.DETACHED
                         else -> State.HIDDEN
                     }
             it.modular = modular
@@ -254,7 +254,7 @@ class Skate : Navigator {
                         Logger assert "$prefix detached"
                         when (mode) {
                             FACTORY -> state = State.ADDED.also { Logger debug "Add $tag" }
-                            SPARING_SINGLETON -> state = State.ATTACHED.also { Logger debug "Attach $tag" }
+                            SPARING -> state = State.ATTACHED.also { Logger debug "Attach $tag" }
                             SINGLETON -> state = State.SHOWING.also { Logger debug "Show $tag" }
                         }
                     }
@@ -262,7 +262,7 @@ class Skate : Navigator {
                         Logger assert "$prefix hiding"
                         when (mode) {
                             FACTORY -> state = State.ADDED.also { Logger debug "Add $tag" }
-                            SPARING_SINGLETON -> state = State.ATTACHED.also { Logger debug "Attach $tag" }
+                            SPARING -> state = State.ATTACHED.also { Logger debug "Attach $tag" }
                             SINGLETON -> state = State.SHOWING.also { Logger debug "Show $tag" }
                         }
                     }
@@ -288,7 +288,7 @@ class Skate : Navigator {
                         Logger assert "$prefix attached"
                         when (mode) {
                             FACTORY -> state = State.REMOVED.also { Logger debug "Remove $tag" }
-                            SPARING_SINGLETON -> state = State.DETACHED.also { Logger debug "Detach $tag" }
+                            SPARING -> state = State.DETACHED.also { Logger debug "Detach $tag" }
                             SINGLETON -> state = State.HIDDEN.also { Logger debug "Hide $tag" }
                         }
 
@@ -297,7 +297,7 @@ class Skate : Navigator {
                         Logger assert "$prefix showing"
                         when (mode) {
                             FACTORY -> state = State.REMOVED.also { Logger debug "Remove $tag" }
-                            SPARING_SINGLETON -> state = State.DETACHED.also { Logger debug "Detach $tag" }
+                            SPARING -> state = State.DETACHED.also { Logger debug "Detach $tag" }
                             SINGLETON -> state = State.HIDDEN.also { Logger debug "Hide $tag" }
                         }
                     }
