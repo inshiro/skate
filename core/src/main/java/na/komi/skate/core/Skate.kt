@@ -9,8 +9,9 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentTransaction
 import kotlinx.android.parcel.Parcelize
+import na.komi.skate.core.global.SkateSingleton
 import na.komi.skate.core.log.Logger
-import java.util.Stack
+import java.util.ArrayList
 
 class Skate : Navigator {
 
@@ -19,31 +20,17 @@ class Skate : Navigator {
         stack.addAll(list)
     }
 
-    private var _stack: Stack<SkateFragment>? = Stack()
-
     override val stack
-        get() = _stack!!
+        get() = SkateSingleton.stack!!
 
     companion object {
-
-        @Volatile
-        private var _instance: Skate? = null
-
-        @Synchronized
-        private fun getInstance() =
-                _instance ?: synchronized(Skate::class.java) {
-                    _instance ?: Skate().also { _instance = it }
-                }
-
-        @Suppress("unused")
-        private fun readResolve() = getInstance()
-
         operator fun invoke(): Skate {
+            // Logger info "Skate instance null?: $${SkateSingleton._instance == null}"
 
-            if (_instance != null)
+            if (SkateSingleton.instance != null)
                 throw RuntimeException("Use startSkating() method to get the single instance of this class.")
 
-            return getInstance()
+            return SkateSingleton.getInstance()
         }
 
 
@@ -65,7 +52,7 @@ class Skate : Navigator {
          *
          * A balance between saving memory and speed.
          */
-        val SPARING: Int = 1
+        val SPARING_SINGLETON: Int = 1
 
 
         /**
@@ -88,7 +75,9 @@ class Skate : Navigator {
 
     @IdRes
     override var container: Int = -1
-    override var defaultMode = FACTORY
+    override var mode = FACTORY
+    private val defaultMode
+        get () = mode
     private val animationStart = android.R.animator.fade_in
     private val animationEnd = android.R.animator.fade_out
     private val handler by lazy { Handler() }
@@ -107,6 +96,8 @@ class Skate : Navigator {
 
     val back: Boolean
         get() = goBack()
+
+    infix fun back(fragment: Fragment) = hide(fragment)
 
     /**
      * [Fragment] wrapper to allow real state change listening.
@@ -183,7 +174,7 @@ class Skate : Navigator {
             it.state =
                     when (mode) {
                         FACTORY -> State.ADDED
-                        SPARING -> State.ATTACHED
+                        SPARING_SINGLETON -> State.ATTACHED
                         else -> State.SHOWING
                     }
             it.modular = modular
@@ -200,7 +191,7 @@ class Skate : Navigator {
                         name,
                         when (mode) {
                             FACTORY -> State.ADDED
-                            SPARING -> State.ATTACHED
+                            SPARING_SINGLETON -> State.ATTACHED
                             else -> State.SHOWING
                         },
                         addToBackStack,
@@ -220,7 +211,7 @@ class Skate : Navigator {
         stack.lastOrNull { it.tag == name }?.also {
             it.state =
                     when (mode) {
-                        SPARING -> State.DETACHED
+                        SPARING_SINGLETON -> State.DETACHED
                         else -> State.HIDDEN
                     }
             it.modular = modular
@@ -263,7 +254,7 @@ class Skate : Navigator {
                         Logger assert "$prefix detached"
                         when (mode) {
                             FACTORY -> state = State.ADDED.also { Logger debug "Add $tag" }
-                            SPARING -> state = State.ATTACHED.also { Logger debug "Attach $tag" }
+                            SPARING_SINGLETON -> state = State.ATTACHED.also { Logger debug "Attach $tag" }
                             SINGLETON -> state = State.SHOWING.also { Logger debug "Show $tag" }
                         }
                     }
@@ -271,7 +262,7 @@ class Skate : Navigator {
                         Logger assert "$prefix hiding"
                         when (mode) {
                             FACTORY -> state = State.ADDED.also { Logger debug "Add $tag" }
-                            SPARING -> state = State.ATTACHED.also { Logger debug "Attach $tag" }
+                            SPARING_SINGLETON -> state = State.ATTACHED.also { Logger debug "Attach $tag" }
                             SINGLETON -> state = State.SHOWING.also { Logger debug "Show $tag" }
                         }
                     }
@@ -297,7 +288,7 @@ class Skate : Navigator {
                         Logger assert "$prefix attached"
                         when (mode) {
                             FACTORY -> state = State.REMOVED.also { Logger debug "Remove $tag" }
-                            SPARING -> state = State.DETACHED.also { Logger debug "Detach $tag" }
+                            SPARING_SINGLETON -> state = State.DETACHED.also { Logger debug "Detach $tag" }
                             SINGLETON -> state = State.HIDDEN.also { Logger debug "Hide $tag" }
                         }
 
@@ -306,7 +297,7 @@ class Skate : Navigator {
                         Logger assert "$prefix showing"
                         when (mode) {
                             FACTORY -> state = State.REMOVED.also { Logger debug "Remove $tag" }
-                            SPARING -> state = State.DETACHED.also { Logger debug "Detach $tag" }
+                            SPARING_SINGLETON -> state = State.DETACHED.also { Logger debug "Detach $tag" }
                             SINGLETON -> state = State.HIDDEN.also { Logger debug "Hide $tag" }
                         }
                     }
@@ -438,10 +429,10 @@ class Skate : Navigator {
     }
 
     internal fun clear() {
-        _instance = null
+
         fragmentManager = null
         listener = null
-        _stack = null
+        SkateSingleton.clear()
     }
 
     interface OnNavigateListener {

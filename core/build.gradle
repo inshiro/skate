@@ -13,7 +13,7 @@ android {
         minSdkVersion 14
         targetSdkVersion 28
         versionCode 1010
-        versionName "0.1.0"
+        versionName "0.1.1"
 
         testInstrumentationRunner "androidx.test.ext.junit.runners.AndroidJUnit4"
 
