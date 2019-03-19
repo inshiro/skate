@@ -1,14 +1,10 @@
 # Skate
-[![Release](https://jitpack.io/v/inshiro.skate/Repo.svg)](https://jitpack.io/#inshiro/skate) [![GitHub license](https://img.shields.io/badge/license-Apache_2-blue.svg)](LICENSE) [![Platform](https://img.shields.io/badge/platform-AndroidX-brightgreen.svg)](https://developer.android.com/jetpack/androidx) [![Kotlin](https://img.shields.io/badge/Kotlin-1.3.21-brightgreen.svg)](https://kotlinlang.org)
+[![Release](https://jitpack.io/v/inshiro/skate.svg)](https://jitpack.io/#inshiro/skate) [![GitHub license](https://img.shields.io/badge/license-Apache_2-blue.svg)](LICENSE) [![Platform](https://img.shields.io/badge/platform-AndroidX-green.svg)](https://developer.android.com/jetpack/androidx) [![Kotlin](https://img.shields.io/badge/Kotlin-1.3.21-orange.svg)](https://kotlinlang.org)
 
 
-Skate is a fragment manager controller that allows you to easily navigate from one fragment to another. Simple and Seamless. Just like it should be. 
+Skate is a fragment manager controller that allows you to easily navigate from one fragment to another. Simple and seamless. Just like it should be. 
 
-`FragmentManager` has an unfriendly behavior to work with. 
-
-Skate uses its own stack and backstack to manage fragments. The stack is pushed or popped *only* when a fragment is *added* or *removed*. Otherwise, any modifications are applied accordingly. 
-
-This should be the intended behavior in my opinion. 
+`FragmentManager` has an unfriendly behavior to work with so Skate uses its own stack and backstack to manage fragments. The stack is pushed or popped *only* when a fragment is *added* or *removed*. Otherwise, any modifications are applied accordingly. In my opinion, this should be the intended behavior. 
 
 - No reflection
 - Add/attach/show | Remove/detach/hide fragments
@@ -40,11 +36,14 @@ class MainActivity : AppCompatActivity() {
 	
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
-		...
+		
+		// ...
+		
 		skate = startSkating(savedInstanceState)
 		skate.fragmentManager = supportFragmentManager
 		skate.container = R.id.main_container
 		fragment.mode = Skate.SINGLETON // optional
+	
 	}
 	
 	override fun onBackPressed() {
@@ -66,7 +65,7 @@ fragment.hide()
 skate to fragment
 ```
 
-#### Modes
+### Modes
 Skate has 3 modes it operates on. The default is `FACTORY`. 
 ```kotlin
 // add-remove
@@ -78,25 +77,28 @@ Skate.SPARING = 1
 // show-hide
 Skate.SINGLETON = 2
 ```
-The mode is saved on method call and its corresponding counterpart is used when invoked. 
-If you show, Skate will hide. Add, remove. etc..
+The mode is obtained from `Fragment.mode` This determines the fragment's behavior on show or hide.
 
-Setting a mode for a fragment.
+If you show, Skate will hide. Add, remove. etc...
 ```kotlin
 fragment.mode = Skate.SINGLETON
 
 mainFragment.mode = Skate.SPARING
 ```
 
-#### Settings
-At any given time you can call these to set the global settings before showing or hiding a fragment.
+### Settings
+At any given time you can set the global settings before showing or hiding a fragment.
 ```kotlin
 skate.fragmentManager = supportFragmentManager
 skate.container = R.id.main_container // id of your view
+
+// Animations
+skate.animationStart = android.R.animator.fade_in
+skate.animationEnd = android.R.animator.fade_out
 ```
-#### Back stack
-By default, fragments are added to the back stack.
-#### Listening
+### Back stack
+By default, fragments are added to the back stack. When going back, if there is currently a visible fragment, it gets hidden.
+### Listening
 To listen to visibility changes, add an implementation of `Skate.OnNavigateListener` to `setOnNavigateListener`.
 ```kotlin
 skate.setOnNavigateListener(object : Skate.OnNavigateListener {
@@ -107,7 +109,7 @@ skate.setOnNavigateListener(object : Skate.OnNavigateListener {
     override fun onBackPressed(current: Fragment?) { }
 })
 ```
-#### Operations
+### Operations
 Sometimes you have lots of fragments you want to work with.
 ```kotlin
 skate.operate {
@@ -117,7 +119,7 @@ skate.operate {
    show(MainFragment)
 }
 ```
-#### Logging
+### Logging
 Skate provides a bit of information about fragment visibility during runtime which might help in debugging visibility-related issues. To enable logging, pass an implementation of `Skate.Logger` to the `Skate.logger` property or use the default `SkateLogger`.
 ```kotlin
 Skate.logger = SkateLogger
