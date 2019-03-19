@@ -33,121 +33,37 @@ interface Navigator {
     val fragmentManager: FragmentManager?
 
     /**
-     * Add a [Fragment] to the stack.
-     *
-     * This is useful if you don't want to show the [Fragment] immediately.
-     *
-     * Since it would be put in the stack, it would still interact with [navigate].
-     * @see [navigate]
-     * @param fragment Target [Fragment] to add.
+     * Hide the currently visible fragment.
+     * @return `true` if a [Fragment] was found, else false.
      */
-    infix fun add(fragment: Fragment): Any?
-
+    val back: Boolean
 
     /**
-     * Add a [Fragment] to the stack.
-     *
-     * This is useful if you don't want to show the [Fragment] immediately.
-     *
-     * Since it would be put in the stack, it would still interact with [navigate].
-     * @see [navigate]
-     * @param fragment Target [Fragment] to add.
-     * @param mode add-remove (0), attach-detach (1), hide-show (2)
-     * @param addToBackStack Register this [fragment] to be able to back press. Default to `true`.
-     * @param modular Inclusive on navigation. (Will be hidden on [navigate])
+     * Runs a set of operations. Does not invoke callbacks.
      */
-    fun add(fragment: Fragment, mode: Int = this.mode, addToBackStack: Boolean = true, modular: Boolean = false)
-
+    fun operate(block: Skate.() -> Unit): Skate
 
     /**
-     * Add a [Fragment] to the stack at the given `index`.
-     *
-     * This is useful if you don't want to show the [Fragment] immediately.
-     *
-     * Since it would be put in the stack, it would still interact with [navigate].
-     * @see [add]
-     * @param index Index position to insert [fragment] in.
-     * @param fragment Target [Fragment] to add.
-     */
-    fun add(index: Int, fragment: Fragment)
-
-
-    /**
-     * Remove a [Fragment] from the stack.
-     *
-     * This essentially calls [hide] with a `mode` of [Skate.FACTORY].
-     * @see [hide]
-     * @param fragment Target [Fragment] to remove.
-     */
-    fun remove(fragment: Fragment)
-
-
-    /**
-     * Navigate to a destination, hiding any fragments in between, including ones marked with `modular`.
-     * This is equivalent to [hide] then show [show].
-     *
-     * Preferably used with a NavigationView.
-     *
-     * @see show
-     * @see hide
-     * @param fragment [Fragment] to navigate to.
-     * @param mode add-remove (0), attach-detach (1), hide-show (2)
-     * @param inBackStack Register this fragment in the backstack. Default to true.
-     *
-     */
-     fun navigate(fragment: Fragment)
-
-
-    /**
-     * Show a fragment.
-     * @param fragment Target [Fragment] to add.
-     * @param mode add-remove (0), attach-detach (1), hide-show (2)
-     * @param addToBackStack Register this [fragment] to be able to back press. Default to `true`.
-     * @param modular Inclusive on navigation. (Will be hidden on [navigate])
+     * Show a [Fragment] based on its [mode].
+     * @param fragment to show
      */
     fun show(fragment: Fragment)
 
-
     /**
-     * Show a fragment.
-     * @param fragment Target [Fragment] to add.
-     * @param mode add-remove (0), attach-detach (1), hide-show (2)
-     * @param addToBackStack Register this [fragment] to be able to back press. Default to `true`.
-     * @param modular Inclusive on navigation. (Will be hidden on [navigate])
+     * Hide a [Fragment] based on its [mode].
+     * @param fragment to hide
      */
-    fun show(fragment: Fragment, mode: Int = this.mode, addToBackStack: Boolean = true, modular: Boolean = false)
 
-
-    /**
-     * Hide a fragment.
-     * @param fragment Target [Fragment] to add.
-     * @param mode add-remove (0), attach-detach (1), hide-show (2)
-     * @param addToBackStack Register this [fragment] to be able to back press. Default to `true`.
-     * @param modular Inclusive on navigation. (Will be hidden on [navigate])
-     */
     fun hide(fragment: Fragment)
 
-
     /**
-     * Hide a fragment.
-     * @param fragment Target [Fragment] to add.
-     * @param mode add-remove (0), attach-detach (1), hide-show (2)
-     * @param addToBackStack Register this [fragment] to be able to back press. Default to `true`.
-     * @param modular Inclusive on navigation. (Will be hidden on [navigate])
+     * Hide the currently visible [Fragment] and then [show] it based on its [mode].
+     * @param fragment to navigate to
      */
-    fun hide(fragment: Fragment, mode: Int = this.mode, addToBackStack: Boolean = true, modular: Boolean = false)
-
-
-    /**
-     * Goes back sequentially. Skips any fragments not registered in backstack.
-     *
-     * Hide the most recent Fragment added to the stack.
-     *
-     * Handle back if we have any fragments in our backstack. If not, let system handle it.
-     */
-    fun goBack(): Boolean
+    fun navigate(fragment: Fragment)
 
     /**
+     * Avoid relying on [FragmentManager]. Only use it to check the currently visible fragments.
      * PopBackStack reverts the last transaction.
      * Recalling the last fragment. If the last fragment is gone, it'll be recreated.
      * Thus we must manage our own backstack because this allows us to properly use
