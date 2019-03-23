@@ -37,8 +37,11 @@ class Skate : Navigator {
         get() = fragmentManager ?: throw NullPointerException("Please set the fragment manager")
 
     private val Fragment.uid
-        get() = this::class.java
-
+        get() = "${javaClass.name}$$container"
+    
+    private val Fragment.uidSimple
+        get() = "${javaClass.simpleName}$$container"
+    
     override val stack
         get() = SkateSingleton.stack
 
@@ -50,7 +53,7 @@ class Skate : Navigator {
 
     @Parcelize
     data class SkateFragment(
-            var tag: String,
+            var uid: String,
             var mode: Int
     ) : Parcelable
 
@@ -62,31 +65,30 @@ class Skate : Navigator {
     override infix fun show(fragment: Fragment) {
         checkAndCreateTransaction()
         @Suppress("NAME_SHADOWING")
-        val fragment = internalFragmentManager.findFragmentByTag(fragment.uid.name) ?: fragment
-
+        val fragment = internalFragmentManager.findFragmentByTag(fragment.uid) ?: fragment
         // Get the mode assigned to the fragment
         var mode = defaultMode
-        modes[fragment.uid.name]?.let {
+        modes[fragment.uid]?.let {
             mode = it
-        } ?: modes.put(fragment.uid.name, mode)
+        } ?: modes.put(fragment.uid, mode)
 
-        if (stack.firstOrNull { it.tag == fragment.uid.name } == null) {
-            currentTransaction?.add(container, fragment, fragment.uid.name)
-            stack.push(SkateFragment(fragment.uid.name, mode))
-            Logger assert "Adding ${fragment.uid.name}"
+        if (stack.firstOrNull { it.uid == fragment.uid } == null) {
+            currentTransaction?.add(container, fragment, fragment.uid)
+            stack.push(SkateFragment(fragment.uid, mode))
+            Logger assert "Adding ${fragment.uid}"
         } else
             when (mode) {
                 FACTORY -> {
 
-                    if (stack.firstOrNull { it.tag == fragment.uid.name } == null)
+                    if (stack.firstOrNull { it.uid == fragment.uid } == null)
                         currentTransaction?.add(
                                 container,
                                 fragment,
-                                fragment.uid.name
-                        ).also { Logger assert "Adding ${fragment.uid.simpleName}" }
+                                fragment.uid
+                        ).also { Logger assert "Adding ${fragment.uidSimple}" }
                 }
-                SPARING -> currentTransaction?.attach(fragment).also { Logger assert "Attaching ${fragment.uid.simpleName}" }
-                SINGLETON -> currentTransaction?.show(fragment).also { Logger assert "Showing ${fragment.uid.simpleName}" }
+                SPARING -> currentTransaction?.attach(fragment).also { Logger assert "Attaching ${fragment.uidSimple}" }
+                SINGLETON -> currentTransaction?.show(fragment).also { Logger assert "Showing ${fragment.uidSimple}" }
             }
 
         // Logger info stack.toString()
@@ -100,25 +102,25 @@ class Skate : Navigator {
     override infix fun hide(fragment: Fragment) {
         checkAndCreateTransaction()
         @Suppress("NAME_SHADOWING")
-        val fragment = internalFragmentManager.findFragmentByTag(fragment.uid.name) ?: fragment
+        val fragment = internalFragmentManager.findFragmentByTag(fragment.uid) ?: fragment
 
         // Get the mode assigned to the fragment
         var mode = defaultMode
-        modes[fragment.uid.name]?.let {
+        modes[fragment.uid]?.let {
             mode = it
-        } ?: modes.put(fragment.uid.name, mode)
+        } ?: modes.put(fragment.uid, mode)
 
         when (mode) {
             FACTORY -> {
-                stack.firstOrNull { it.tag == fragment.uid.name }?.let {
-                    Logger assert "Removing ${fragment.uid.simpleName}"
+                stack.firstOrNull { it.uid == fragment.uid }?.let {
+                    Logger assert "Removing ${fragment.uidSimple}"
                     currentTransaction?.remove(fragment)
                     stack.remove(it)
-                    SkateSingleton.modes.remove(it.tag)
+                    SkateSingleton.modes.remove(it.uid)
                 }
             }
-            SPARING -> currentTransaction?.detach(fragment)?.also { Logger assert "Detaching ${fragment.uid.simpleName}" }
-            SINGLETON -> currentTransaction?.hide(fragment)?.also { Logger assert "Hiding ${fragment.uid.simpleName}" }
+            SPARING -> currentTransaction?.detach(fragment)?.also { Logger assert "Detaching ${fragment.uidSimple}" }
+            SINGLETON -> currentTransaction?.hide(fragment)?.also { Logger assert "Hiding ${fragment.uidSimple}" }
         }
 
         //Logger warn stack.toString()

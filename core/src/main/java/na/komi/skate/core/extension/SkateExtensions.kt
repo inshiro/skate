@@ -53,17 +53,17 @@ fun Activity.startSkating(savedInstanceState: Bundle?): Skate {
 }
 
 
-fun Fragment.startSkating(savedInstanceState: Bundle?) = lazy {
+fun Fragment.startSkating() = lazy {
     val skate = SkateSingleton.getInstance()
-    activity?.application?.registerActivityLifecycleCallbacks(getLifecycle(savedInstanceState, skate, activity!!))
+    // activity?.application?.registerActivityLifecycleCallbacks(getLifecycle(savedInstanceState, skate, activity!!))
     skate
 }
 
 var Fragment.mode: Int
     set(value) {
-        SkateSingleton.modes[this::class.java.name] = value
+        SkateSingleton.modes["${javaClass.name}$${SkateSingleton.getInstance().container}"] = value
     }
-    get() = SkateSingleton.modes[this::class.java.name] ?: Skate.FACTORY
+    get() = SkateSingleton.modes["${javaClass.name}$${SkateSingleton.getInstance().container}"] ?: Skate.FACTORY
 
 fun Fragment.show() = also {
     SkateSingleton.getInstance().show(this)
